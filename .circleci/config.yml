@@ -4,71 +4,35 @@
 #
 version: 2
 jobs:
- build:
-  docker:
-   # specify the version you desire here
-   # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-   - image: circleci/python:2.7.17
-  
-   # Specify service dependencies here if necessary
-   # CircleCI maintains a library of pre-built images
-   # documented at https://circleci.com/docs/2.0/circleci-images/
-   # - image: circleci/postgres:9.4
-   - image: circleci/mysql:8.0.12
-    environment:
-     MYSQL_DATABASE: csye6225
-     MYSQL_ROOT_HOST: "%"
-     MYSQL_USER: root
-     MYSQL_PASSWORD: Jennifer202212
-    command: [--default-authentication-plugin=mysql_native_password]
-  
-  working_directory: ~/repo
-  
-  steps:
-   - checkout
-  
-   - run:
-     name: install dockerize
-     command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
-     environment:
-      DOCKERIZE_VERSION: v0.3.0
-   - run:
-     name: Wait for db
-     command: dockerize -wait tcp://localhost:3306 -timeout 1m
-  
-   # Download and cache dependencies
-   - restore_cache:
-     keys:
-      - v3-dependencies-{{ checksum "test-requirements.txt" }}
-      # fallback to using the latest cache if no exact match is found
-      - v3-dependencies-
-  
-   - run:
-     name: install dependencies
-     command: |
-      python3 -m venv ~/venv
-      . ~/venv/bin/activate
-      pip install -r test-requirements.txt
-  
-   - save_cache:
-     paths:
-      - ~/venv
-     key: v3-dependencies-{{ checksum "test-requirements.txt" }}
-  
-   # run tests!
-   # this example uses Django's built-in test-runner
-   # other common Python testing frameworks include pytest and nose
-   # https://pytest.org
-   # https://nose.readthedocs.io
-   - run:
-     name: run tests
-     command: |
-      . ~/venv/bin/activate
-      pytest
-  
-   - store_test_results:
-     path: test-reports
-  
-   - store_artifacts:
-     path: htmlcov
-     destination: htmlcov
+ build:
+  docker:
+   # specify the version you desire here
+   # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
+   - image: circleci/python:3.7.1
+  
+   # Specify service dependencies here if necessary
+   # CircleCI maintains a library of pre-built images
+   # documented at https://circleci.com/docs/2.0/circleci-images/
+   # - image: circleci/postgres:9.4
+   - image: circleci/redis:5.0.1
+   - image: circleci/mysql:8.0.12
+    environment:
+     MYSQL_DATABASE: test_easycron_
+     MYSQL_ROOT_HOST: "%"
+     MYSQL_USER: easycron
+     MYSQL_PASSWORD: 123
+    command: [--default-authentication-plugin=mysql_native_password]
+  
+  working_directory: ~/repo
+  
+  steps:
+   - checkout
+  
+   - run:
+     name: install dockerize
+     command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+     environment:
+      DOCKERIZE_VERSION: v0.3.0
+   - run:
+     name: Wait for db
+     command: dockerize -wait tcp://localhost:3306 -timeout 1m
