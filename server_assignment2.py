@@ -536,7 +536,7 @@ class BillsHandler(tornado.web.RequestHandler):
             return
 
         auth_email, auth_psd = auth_list
-        sql = "SELECT `email`, `password` from `tbl_users` where email = '%s';" % auth_email
+        sql = "SELECT `uid`, `password` from `tbl_users` where email = '%s';" % auth_email
         db = DatabaseUtil()
         result = db.Start(sql)
         if not result:
@@ -545,9 +545,10 @@ class BillsHandler(tornado.web.RequestHandler):
             self.write(getResponseJson({"404": "Not Found"}))
             return
 
+        uid, db_psd = result[0]
         psd_str = hashlib.md5(auth_psd).hexdigest()
         salt_str = hashlib.md5(psd_str + "csye6225").hexdigest()
-        if result[0][1] != salt_str:
+        if db_psd != salt_str:
             print "wrong password"
             self.set_status(400)
             self.write(getResponseJson({"400": "Bad Request"}))
@@ -555,7 +556,7 @@ class BillsHandler(tornado.web.RequestHandler):
 
 
         sql = "SELECT `id`, `created_ts`, `updated_ts`, `owner_id`, `vendor`, `bill_date`, `due_date`, `amount_due`, " \
-              "`categories`, `paymentStatus` from `tbl_bills`;"
+              "`categories`, `paymentStatus` from `tbl_bills` WHERE `owner_id` = '%s';" % uid
         result = db.Start(sql)
         if not result:
             print "bills empty"
