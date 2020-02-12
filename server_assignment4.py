@@ -729,8 +729,8 @@ class FileHandler(tornado.web.RequestHandler):
 
         file_id = uuid.uuid1()
         file_md5 = hashlib.md5(file_data).hexdigest()
-        sql = "SELECT 1 FROM `tbl_files` WHERE `file_md5` = '%s' AND `file_owner` = '%s' AND `bill_attached` = '%s' AND" \
-              " `file_name` = '%s' and `delete_time` IS NULL; " % (file_md5, owner_id, bill_id, file_name)
+        sql = "SELECT 1 FROM `tbl_files` WHERE `file_owner` = '%s' AND `bill_attached` = '%s' AND `delete_time` IS NULL; "\
+              % (owner_id, bill_id)
         result = db.Start(sql)
         if result:
             print "file repeated, same user, same bill, same name, same file_data"
