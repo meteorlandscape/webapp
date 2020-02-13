@@ -231,7 +231,6 @@ class BillHandler(tornado.web.RequestHandler):
     def post(self):
         # Basic Authentication
         authorization = self.request.headers.get('authorization', '')
-        print "authorization : %s" % authorization
         if not authorization:
             print "not authorization"
             self.SetAuthHeader()
@@ -598,10 +597,9 @@ class BillsHandler(tornado.web.RequestHandler):
 
 class FileHandler(tornado.web.RequestHandler):
 
-    def post(self):
+    def post(self, bill_id):
         # Basic Authentication
         authorization = self.request.headers.get('authorization', '')
-        print "authorization : %s" % authorization
         if not authorization:
             print "not authorization"
             self.SetAuthHeader()
@@ -651,8 +649,6 @@ class FileHandler(tornado.web.RequestHandler):
             self.write(getResponseJson({"400": "Bad Request"}))
             return
 
-
-        bill_id = self.get_query_argument("id", "")
         owner_id = result[0][2]
         sql = "SELECT 1 from `tbl_bills` where `id` = '%s' and `owner_id` = '%s';" % (bill_id, owner_id)
         result = db.Start(sql)
@@ -669,7 +665,7 @@ class FileHandler(tornado.web.RequestHandler):
             self.write(getResponseJson({"400": "Bad request"}))
             return
 
-        img_file =  self.request.files.get("file")
+        img_file = self.request.files.get("file")
         if not img_file:
             print "img_file not exit"
             self.set_status(400)
@@ -763,7 +759,7 @@ class FileHandler(tornado.web.RequestHandler):
                                     }))
 
 
-    def get(self, path_file_id):
+    def get(self, bill_id, file_id):
         # Basic Authentication
         authorization = self.request.headers.get('authorization', '')
         print "authorization : %s" % authorization
@@ -806,13 +802,6 @@ class FileHandler(tornado.web.RequestHandler):
             self.write(getResponseJson({"400": "Bad Request"}))
             return
 
-        bill_id = self.get_query_argument("billId")
-        file_id = self.get_query_argument("fileId")
-        if file_id != path_file_id:
-            print "file_id not match"
-            self.set_status(400)
-            self.write(getResponseJson({"400": "Bad Request"}))
-            return
 
         sql = "SELECT `file_name`, `url`, `upload_date` FROM `tbl_files` WHERE `id` = '%s' AND `bill_attached` = '%s'" \
               " AND `file_owner` = '%s' and `delete_time` IS NULL;" % (file_id, bill_id, uid)
@@ -834,7 +823,7 @@ class FileHandler(tornado.web.RequestHandler):
                                     }))
 
 
-    def delete(self, path_file_id):
+    def delete(self, bill_id, file_id):
         # Basic Authentication
         authorization = self.request.headers.get('authorization', '')
         if not authorization:
@@ -876,14 +865,6 @@ class FileHandler(tornado.web.RequestHandler):
             self.write(getResponseJson({"400": "Bad Request"}))
             return
 
-        bill_id = self.get_query_argument("billId")
-        file_id = self.get_query_argument("fileId")
-        if file_id != path_file_id:
-            print "file_id not match"
-            self.set_status(400)
-            self.write(getResponseJson({"400": "Bad Request"}))
-            return
-
         sql = "SELECT `url` FROM `tbl_files` WHERE `id` = '%s' AND `bill_attached` = '%s' AND `file_owner` = '%s' AND " \
               "`delete_time` IS NULL;" % (file_id, bill_id, uid)
         result = db.Start(sql)
@@ -921,8 +902,8 @@ class Application(tornado.web.Application):
             (r"/v1/bill", BillHandler),
             (r"/v1/bill/((?!.*/).*)", BillHandler),
             (r"/v1/bills", BillsHandler),
-            (r"/v1/bill/[\w\-]*/file", FileHandler),
-            (r"/v1/bill/[\w\-]*/file/((?!.*/).*)", FileHandler),
+            (r"/v1/bill/([\w\-]*[\w])/file", FileHandler),
+            (r"/v1/bill/([\w\-]*[\w])/file/((?!.*/).*)", FileHandler),
         ]
         settings = dict(
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
