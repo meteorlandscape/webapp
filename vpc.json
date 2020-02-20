@@ -1,0 +1,183 @@
+
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Launch EC2 - CSYE 6225 Spring 2020",
+    "Parameters": {
+
+        "InstanceTypeParameter": {
+            "Type": "String",
+            "AllowedValues": ["t2.micro", "m1.small", "m1.large"]
+        },
+
+        "VPCName": {
+            "Type": "String"
+        },
+
+        "AvailabilityZone": {
+            "Type": "String"
+        },
+
+        "VPCCIDRBlock": {
+            "Type": "String"
+        },
+
+        "VPCSubnetCIDR1": {
+            "Type": "String"
+        },
+
+        "VPCSubnetCIDR2": {
+            "Type": "String",
+        },
+
+        "VPCSubnetCIDR3": {
+            "Type": "String",
+        },
+
+        "DestinationCIRDBlock": {
+            "Type": "String"
+        }
+
+    },
+
+    "Resources": {
+        "DemoVPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": {"Ref": "VPCCIDRBlock"},
+                "EnableDnsSupport": "true",
+                "EnableDnsHostnames": "true",
+                "InstanceTenancy": "default",
+
+                "Tags": [
+                    {"Key": "Name", "Value": {"Fn::Join": ["-", [{"Ref": "VPCName"}, "VPC"]]}}
+                ]
+
+            }
+        },
+
+        "PublicSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {"Ref": "DemoVPC"},
+                "CidrBlock": {"Ref": "VPCSubnetCIDR1"},
+                "AvailabilityZone": {"Fn::Select": ["0", {"Fn::GetAZs": {"Ref": "AvailabilityZone"}}]},
+
+                "MapPublicIpOnLaunch": true,
+
+                "Tags": [
+                    {"Key": "Network", "Value": "Public"},
+                    {"Key": "Name", "Value": {"Fn::Join": ["-", [{"Ref": "VPCName"}, "PublicSubnet-1"]]}}
+                ]
+
+            }
+
+        },
+
+        "PublicSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {"Ref": "DemoVPC"},
+                "CidrBlock": {"Ref": "VPCSubnetCIDR2"},
+                "AvailabilityZone": {"Fn::Select": ["1", {"Fn::GetAZs": {"Ref": "AvailabilityZone"}}]},
+
+                "MapPublicIpOnLaunch": true,
+
+                "Tags": [
+                    {"Key": "Network", "Value": "Public"},
+                    {"Key": "Name", "Value": {"Fn::Join": ["-", [{"Ref": "VPCName"}, "PublicSubnet-2"]]}}
+                ]
+
+            }
+
+        },
+
+        "PublicSubnet3": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {"Ref": "DemoVPC"},
+                "CidrBlock": {"Ref": "VPCSubnetCIDR3"},
+                "AvailabilityZone": {"Fn::Select": ["2", {"Fn::GetAZs": {"Ref": "AvailabilityZone"}}]},
+
+                "MapPublicIpOnLaunch": true,
+
+                "Tags": [
+                    {"Key": "Network", "Value": "Public"},
+                    {"Key": "Name", "Value": {"Fn::Join": ["-", [{"Ref": "VPCName"}, "PublicSubnet-3"]]}}
+                ]
+
+            }
+
+        },
+
+        "DemoInternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    {"Key": "Name", "Value": {"Fn::Join": ["-", [{"Ref": "VPCName"}, "InternetGateway"]]}},
+                    {"Key": "Network", "Value": "Public"}
+                ]
+            }
+        },
+
+        "AttachedGateway": {
+            "DependsOn": ["DemoVPC", "DemoInternetGateway"],
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": {"Ref": "DemoVPC"},
+                "InternetGatewayId": {"Ref": "DemoInternetGateway"}
+            }
+        },
+
+        "PublicRouteTable": {
+            "DependsOn": ["DemoVPC"],
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {"Ref": "DemoVPC"},
+                "Tags": [
+                    {"Key": "Network", "Value": "Public"},
+                    {"Key": "Name", "Value": {"Fn::Join": ["-", [{"Ref": "VPCName"}, "RouteTable"]]}}
+                ]
+            }
+        },
+
+        "publicSubnetRouteTableAssociation1": {
+            "DependsOn": ["PublicSubnet1", "PublicRouteTable"],
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {"Ref": "PublicSubnet1"},
+                "RouteTableId": {"Ref": "PublicRouteTable"}
+            }
+        },
+
+        "publicSubnetRouteTableAssociation2": {
+            "DependsOn": ["PublicSubnet2", "PublicRouteTable"],
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {"Ref": "PublicSubnet2"},
+                "RouteTableId": {"Ref": "PublicRouteTable"}
+            }
+        },
+
+        "publicSubnetRouteTableAssociation3": {
+            "DependsOn": ["PublicSubnet3", "PublicRouteTable"],
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {"Ref": "PublicSubnet3"},
+                "RouteTableId": {"Ref": "PublicRouteTable"}
+            }
+        },
+
+        "PublicRoute": {
+            "DependsOn": ["PublicRouteTable", "DemoInternetGateway"],
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "AttachedGateway",
+            "Properties": {
+                "RouteTableId": {"Ref": "PublicRouteTable"},
+                "DestinationCidrBlock": {"Ref": "DestinationCIRDBlock"},
+                "GatewayId": {"Ref": "DemoInternetGateway"}
+            }
+        }
+
+    }
+}
+
